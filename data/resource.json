@@ -1,0 +1,32 @@
+[
+  {
+    "id": "R1",
+    "name": "Alice",
+    "type": "worker",
+    "skills": ["packing", "labeling"]
+  },
+  {
+    "id": "R2",
+    "name": "Bob",
+    "type": "worker",
+    "skills": ["transporting", "packing"]
+  },
+  {
+    "id": "R3",
+    "name": "Charlie",
+    "type": "worker",
+    "skills": ["labeling"]
+  },
+  {
+    "id": "M1",
+    "name": "AutoPack3000",
+    "type": "machine",
+    "skills": ["packing"]
+  },
+  {
+    "id": "M2",
+    "name": "LabelBotX",
+    "type": "machine",
+    "skills": ["labeling"]
+  }
+]

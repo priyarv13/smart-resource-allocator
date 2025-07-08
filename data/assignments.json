@@ -1,0 +1,32 @@
+[
+  {
+    "task_id": "T1",
+    "task_name": "Pack Order A",
+    "resource_id": "R1",
+    "resource_name": "Alice"
+  },
+  {
+    "task_id": "T2",
+    "task_name": "Label Order A",
+    "resource_id": "R3",
+    "resource_name": "Charlie"
+  },
+  {
+    "task_id": "T3",
+    "task_name": "Transport Order A",
+    "resource_id": "R2",
+    "resource_name": "Bob"
+  },
+  {
+    "task_id": "T4",
+    "task_name": "Pack Order B",
+    "resource_id": "M1",
+    "resource_name": "AutoPack3000"
+  },
+  {
+    "task_id": "T5",
+    "task_name": "Label Order B",
+    "resource_id": "M2",
+    "resource_name": "LabelBotX"
+  }
+]
