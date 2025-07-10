@@ -1,25 +1,15 @@
 """llm_chatbot.py
-Smart Resource Allocator – Together.ai‑powered chatbot
+Smart Resource Allocator – Together.ai-powered chatbot
 -----------------------------------------------------
-* Uses Together.ai (OpenAI‑compatible) API so you get free monthly tokens.
+* Uses Together.ai (OpenAI-compatible) API.
 * Loads your API key from a .env file using `python-dotenv`
 * Model: "mistralai/Mistral-7B-Instruct-v0.2"
-
-How to use
-~~~~~~~~~~
-1. Create a `.env` file in your project root (same level as `main.py`):
-   OPENAI_API_KEY=your_together_key_here
-
-2. Install dependencies:
-   pip install openai python-dotenv
-
-3. Run the chatbot:
-   python assistant/llm_chatbot.py
 """
 
 from __future__ import annotations
 import json
 import os
+import re
 from pathlib import Path
 import openai
 from dotenv import load_dotenv
@@ -32,7 +22,7 @@ TOGETHER_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 
 if not openai.api_key:
     raise RuntimeError(
-        "⚠️  OPENAI_API_KEY is missing. Please create a .env file with your Together.ai key:\n"
+        "⚠️ OPENAI_API_KEY is missing. Please create a .env file with your Together.ai key:\n"
         "OPENAI_API_KEY=your_key_here"
     )
 
@@ -46,7 +36,7 @@ RESOURCES_FILE = DATA_DIR / "resource.json"
 TASKS_FILE = DATA_DIR / "tasks.json"
 
 # ----------------------------
-# Load data
+# Load data helpers
 # ----------------------------
 def load_json(path: Path):
     with open(path, "r", encoding="utf-8") as fp:
@@ -70,16 +60,12 @@ def build_prompt(query: str, assignment_lines: list[str]) -> str:
     return prompt
 
 # ----------------------------
-# Call Together.ai
+# Rule-based skill reassignment check
 # ----------------------------
-def ask_together(prompt: str, temperature: float = 0.2) -> str:
-    response = openai.ChatCompletion.create(
-        model=TOGETHER_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=temperature,
-    )
-    return response.choices[0].message.content.strip()
-    # 4) Can X take over Tn instead of Y?
+def direct_skill_check(query, resources, tasks):
+    q = query.lower()
+
+    # Pattern: Can Bob take over T2 instead of Alice?
     pat_swap = re.search(r"can (\w+) take over (t\d+)(?: instead of (\w+))?", q)
     if pat_swap:
         new_res_name, task_id, old_res_name = pat_swap.groups()
@@ -92,20 +78,32 @@ def ask_together(prompt: str, temperature: float = 0.2) -> str:
             return f"❓ I couldn't find a task with ID '{task_id}'."
 
         required = task["required_skill"].lower()
-        has_skill = required in map(str.lower, new_res.get("skills", []))
-
-        if has_skill:
+        if required in map(str.lower, new_res.get("skills", [])):
             return f"✅ Yes — {new_res['name']} has '{required}' skill and can take over {task_id}."
         else:
             return f"❌ No — {new_res['name']} does not have the skill '{required}' required for {task_id}."
 
+    return None
 
 # ----------------------------
-# Interactive chat
+# Call Together.ai
+# ----------------------------
+def ask_together(prompt: str, temperature: float = 0.2) -> str:
+    response = openai.ChatCompletion.create(
+        model=TOGETHER_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=temperature,
+    )
+    return response.choices[0].message.content.strip()
+
+# ----------------------------
+# Interactive chatbot loop
 # ----------------------------
 def chat():
     assignments = load_json(ASSIGNMENTS_FILE)
     assignment_lines = build_assignment_lines(assignments)
+    resources = load_json(RESOURCES_FILE)
+    tasks = load_json(TASKS_FILE)
 
     print("🤖 Together.ai Chatbot ready. Type 'exit' to quit.")
     while True:
@@ -119,11 +117,16 @@ def chat():
             print("Goodbye!")
             break
 
-        prompt = build_prompt(user_q, assignment_lines)
-        try:
-            answer = ask_together(prompt)
-        except Exception as e:
-            answer = f"❌ API error: {e}"
+        rule_answer = direct_skill_check(user_q, resources, tasks)
+        if rule_answer:
+            answer = rule_answer
+        else:
+            prompt = build_prompt(user_q, assignment_lines)
+            try:
+                answer = ask_together(prompt)
+            except Exception as e:
+                answer = f"❌ API error: {e}"
+
         print(f"\nAssistant: {answer}")
 
 if __name__ == "__main__":
